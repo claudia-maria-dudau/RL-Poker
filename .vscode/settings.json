@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./neuron_poker-master/gym_env",
+        "./neuron_poker-master"
+    ],
+    "cmake.sourceDirectory": "${workspaceFolder}/neuron_poker/tools/montecarlo_cpp"
+}
