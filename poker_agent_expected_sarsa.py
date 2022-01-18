@@ -21,7 +21,6 @@ class ExpectedSarsa_PokerAgent(PokerAgent):
         #
         # get Q value of random portion (X < epsilon)
 
-
         prob_actions_whenRandom = np.array([(eps * (1/self.n_action)) for action_index in range(0, self.n_action)])
         prob_actions_whenBest = np.array([0 if action_index != next_action else (1.0-eps) \
                                          for action_index in range(0, self.n_action)])

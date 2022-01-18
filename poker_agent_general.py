@@ -1,3 +1,4 @@
+from tkinter import N
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
@@ -32,13 +33,16 @@ class PokerAgent:
         if np.random.rand() > epsilon:
             action = best_action
         else:
-            action = self.env.action_space.sample()
+            if self.env.legal_moves != None:
+                action = np.random.choice([x.value for x in self.env.legal_moves])
+            else:  
+                action = self.env.action_space.sample()
             
         return (action)
 
     # training the agent
     def train(self, no_episodes, plot_stats=True):
-        average_nb = 10
+        average_nb = 100
 
         scores = []
         average_scores = []
@@ -89,11 +93,11 @@ class PokerAgent:
             plt.ylabel("Score")
             plt.plot(scores)
             plt.show()
-            print(f'Last 10-episode average score at the end of simulation: {average_scores[-1]}')
+            print(f'Last 100-episode average score at the end of simulation: {average_scores[-1]}')
 
             plt.title("Number of actions performed per episode")
             plt.xlabel("Episode")
             plt.ylabel("No. of actions")
             plt.plot(actions_per_ep)
             plt.show()
-            print(f'Last 10-episode average number of actions performed: {np.mean(actions_per_ep[:-10])}')
+            print(f'Last 100-episode average number of actions performed: {np.mean(actions_per_ep[:-100])}')
