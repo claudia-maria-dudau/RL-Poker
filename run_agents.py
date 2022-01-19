@@ -31,7 +31,8 @@ def run_expected_sarsa_agent():
 
     ExpectedSarsaAgent = ExpectedSarsa_PokerAgent(env, gamma=0.8, alpha=1e-1,
                         start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999)
-    ExpectedSarsaAgent.train(no_episodes=101)
+    ExpectedSarsaAgent.load_q_table()
+    ExpectedSarsaAgent.train(no_episodes=10)
 
 # run_sarsa_agent()
 # run_qlearning_agent()

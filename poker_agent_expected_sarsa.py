@@ -4,7 +4,7 @@ import numpy as np
 class ExpectedSarsa_PokerAgent(PokerAgent):
     def __init__(self, env, gamma=0.8, alpha=1e-1,
                  start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999):
-        super().__init__(env, gamma, alpha, start_epsilon, end_epsilon, epsilon_decay)
+        super().__init__('expected_sarsa', env, gamma, alpha, start_epsilon, end_epsilon, epsilon_decay)
 
     def update_experience(self, state, action, reward, next_state, n_episode):
         # get the action at the next step using e-greedy policy

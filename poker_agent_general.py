@@ -1,13 +1,16 @@
+from fileinput import filename
 from tkinter import N
+from turtle import st
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
 from tqdm import trange
 
 class PokerAgent:
-    def __init__(self, env, gamma=0.8, alpha=1e-1,
+    def __init__(self, name, env, gamma=0.8, alpha=1e-1,
                  start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999):
         self.env = env
+        self.name = name
         self.n_action = self.env.action_space.n
         self.gamma = gamma
         self.alpha = alpha
@@ -27,14 +30,17 @@ class PokerAgent:
 
     # select action based on epsilon greedy
     def select_action(self, state, epsilon):
-        # implicit policy; if we have action values for that state, choose the largest one, else random
-        best_action = np.argmax(self.q[state]) if state in self.q else self.env.action_space.sample()
-        
+        # current legal moves
+        legal_moves = [x.value for x in self.env.legal_moves]
+
+        # implicit policy: 
+        # if we have action values for that state, choose the largest one, else random
+        best_action = legal_moves[np.argmax(self.q[state][legal_moves])] if state in self.q else np.random.choice(legal_moves)
         if np.random.rand() > epsilon:
             action = best_action
         else:
-            if self.env.legal_moves != None:
-                action = np.random.choice([x.value for x in self.env.legal_moves])
+            if legal_moves:
+                action = np.random.choice(legal_moves)
             else:  
                 action = self.env.action_space.sample()
             
@@ -101,3 +107,33 @@ class PokerAgent:
             plt.plot(actions_per_ep)
             plt.show()
             print(f'Last 100-episode average number of actions performed: {np.mean(actions_per_ep[:-100])}')
+
+        self.save_q_table()
+
+    # saving the current q table in file
+    def save_q_table(self):
+        filepath = 'data/q_table_' + self.name + '.txt'
+        f = open(filepath, "w")
+
+        for key, value in self.q.items():
+            value = [x for x in value]
+            f.write("{}: {}\n".format(key, value))
+
+        f.close() 
+
+    # loading the q table from file
+    def load_q_table(self):
+        filepath = 'data/q_table_' + self.name + '.txt'
+        f = open(filepath, "r")
+
+        item = f.readline()
+        while item:
+            if item != '\n':
+                item = item.split(": ")
+                key = (float(x) for x in item[0][1 : len(item[0]) - 1].split(", "))
+                value = [float(x) for x in item[1][1 : len(item[1]) - 3].split(", ")]
+                self.q[key] = value
+                
+            item = f.readline()
+
+        f.close() 
