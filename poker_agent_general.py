@@ -24,8 +24,8 @@ class PokerAgent:
         self.epsilon_decay = epsilon_decay
 
     # get epsilon
-    def get_epsilon(self, n_episode):
-        epsilon = max(self.start_epsilon * (self.epsilon_decay ** n_episode), self.end_epsilon)
+    def get_epsilon(self, no_episode):
+        epsilon = max(self.start_epsilon * (self.epsilon_decay ** no_episode), self.end_epsilon)
         return (epsilon)
 
     # select action based on epsilon greedy
