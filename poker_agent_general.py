@@ -23,6 +23,10 @@ class PokerAgent:
         self.end_epsilon = end_epsilon
         self.epsilon_decay = epsilon_decay
 
+        # max values during training
+        self.max_score = [float("-inf"), float("-inf"), float("-inf"), float("-inf")]
+        self.round_max_score = [-1, -1, -1, -1]
+
     # get epsilon
     def get_epsilon(self, no_episode):
         epsilon = max(self.start_epsilon * (self.epsilon_decay ** no_episode), self.end_epsilon)
@@ -90,6 +94,10 @@ class PokerAgent:
             if episode_index > average_nb:
                 average_score = np.mean(scores[episode_index - average_nb:episode_index])
                 average_scores.append(average_score)
+
+                if average_score > self.max_score[0]:
+                    self.max_score[0] = average_score
+                    self.round_max_score[0] = episode_index
             else:
                 average_scores.append(0)
 
@@ -108,6 +116,7 @@ class PokerAgent:
             plt.show()
             print(f'Last 100-episode average number of actions performed: {np.mean(actions_per_ep[:-100])}')
 
+        print(self.max_score[0], self.round_max_score[0])
         self.save_q_table()
 
     # saving the current q table in file

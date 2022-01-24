@@ -28,18 +28,44 @@ class ReplayBuffer:
         return len(self.replay_mem)
 
 class DQNModel(tf.keras.Model):
-    def __init__(self, input_shape, n_action):
+    def __init__(self, input_shape, n_action, method):
         super(DQNModel, self).__init__()
 
         # add an input layer of a given input shape
         self.input_layer = tf.keras.layers.InputLayer(input_shape=input_shape)
 
-        # add a few hidden layers
-        self.hidden_layers = []
-        self.hidden_layers.append(tf.keras.layers.Dense(64, activation='relu'))
-        self.hidden_layers.append(tf.keras.layers.Dense(32, activation='relu'))
+        if method == MethodToUse.DQN_BASE:
+            # add a few hidden layers
+            self.hidden_layers = []
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
 
-        self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+            self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+        elif method == MethodToUse.DQN_TARGET_NETWORK:
+            # add a few hidden layers
+            self.hidden_layers = []
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='linear'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+
+            self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+        elif method == MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY:
+            # add a few hidden layers
+            self.hidden_layers = []
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+
+            self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+        else:
+            # add a few hidden layers
+            self.hidden_layers = []
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+
+            self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
     @tf.function
     def call(self, inputs):
@@ -73,7 +99,7 @@ class DQN_PokerAgent(PokerAgent):
 
         # model for function approximation methods
         observation_space_shape = list(env.observation_space)
-        self.dqn = DQNModel(input_shape=observation_space_shape, n_action=env.action_space.n)
+        self.dqn = DQNModel(input_shape=observation_space_shape, n_action=self.env.action_space.n, method=self.method)
 
         # input = BatchSize (unknown, that's why it is None) X input_shape of the environment
         inputShape = [None]
@@ -81,7 +107,7 @@ class DQN_PokerAgent(PokerAgent):
         self.dqn.build(tf.TensorShape(inputShape))
 
         if self.method > MethodToUse.DQN_BASE:
-            self.dqn_target = DQNModel(input_shape=observation_space_shape, n_action=env.action_space.n)
+            self.dqn_target = DQNModel(input_shape=observation_space_shape, n_action=env.action_space.n, method=self.method)
             self.dqn_target.build(tf.TensorShape(inputShape))
 
         # replay buffer
@@ -219,7 +245,7 @@ class DQN_PokerAgent(PokerAgent):
 
         # get separate tensors for states, actions, rewards, nextstates, dones
         b_states = tf.stack([x[0] for x in train_batch], axis=0)
-        b_actions = tf.stack([x[1] for x in train_batch], axis=0)
+        b_actions = tf.stack([tf.cast(x[1], tf.int32) for x in train_batch], axis=0)
         b_rewards = tf.stack([x[2] for x in train_batch], axis=0)
         b_next_states = tf.stack([x[3] for x in train_batch], axis=0)
         b_dones = tf.stack([x[4] for x in train_batch], axis=0)
@@ -267,9 +293,9 @@ class DQN_PokerAgent(PokerAgent):
 
         return loss, grads_magnitude
 
-    def train(self, max_episodes, max_steps_per_episode, reward_threshold):
+    def train(self, max_episodes, max_steps_per_episode, reward_threshold, no_episodes_for_average = 10):
         episode_reward_history = []
-        last_rewards = collections.deque(maxlen=10)
+        last_rewards = collections.deque(maxlen=no_episodes_for_average)
 
         self.max_episodes = max_episodes
         self.max_steps_per_episode = max_steps_per_episode
@@ -286,13 +312,18 @@ class DQN_PokerAgent(PokerAgent):
 
                 t.set_description(f'Episode {episode}')
                 t.set_postfix(episode_reward=episode_reward, running_reward=mean_episode_reward)
-                if episode % 10 == 0:
+                if episode % no_episodes_for_average == 0:
                     print(f'\nEpisode {episode} (total step) {self.total_steps}: average reward: {mean_episode_reward}. avg loss: {avg_loss} epsilon used: {epsilon_used} grads mag: {grads_magnitude}')
                 
+                    if mean_episode_reward > self.max_score[self.method.value]:
+                        self.max_score[self.method.value] = mean_episode_reward
+                        self.round_max_score[self.method.value] = episode
+
                 if mean_episode_reward > reward_threshold:
                     break
 
         print(f"\nSolved at episode{episode}: average rewards {mean_episode_reward:.2f}!")
+        print(self.max_score[self.method.value], self.round_max_score[self.method.value])
 
         self.save_q_table()
         self.save_model()

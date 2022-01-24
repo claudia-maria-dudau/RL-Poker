@@ -1,2 +1,2 @@
-model_checkpoint_path: "dqn_base"
-all_model_checkpoint_paths: "dqn_base"
+model_checkpoint_path: "dqn_target_network"
+all_model_checkpoint_paths: "dqn_target_network"

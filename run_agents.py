@@ -39,15 +39,15 @@ def run_expected_sarsa_agent():
 
 def run_dqn_agent():
     env = HoldemTable()
-    env.add_player(EquityPlayer(name='equity/20/30', min_call_equity=.2, min_bet_equity=.3))
+    env.add_player(RandomPlayer())
     env.add_player(PlayerShell(name='DQN', stack_size=500))
     env.reset()
 
     DQNAgent = DQN_PokerAgent(env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
                       steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=100,
                       start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                      method=MethodToUse.DQN_BASE)
-    DQNAgent.train(max_episodes=20, max_steps_per_episode=200, reward_threshold=500)
+                      method=MethodToUse.DQN_TARGET_NETWORK)
+    DQNAgent.train(max_episodes=1000, max_steps_per_episode=200, reward_threshold=400, no_episodes_for_average = 10)
 
 # run_sarsa_agent()
 # run_qlearning_agent()
