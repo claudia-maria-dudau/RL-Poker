@@ -36,10 +36,11 @@ class DQNModel(tf.keras.Model):
 
         if method == MethodToUse.DQN_BASE:
             # add a few hidden layers
+            #avg 173.6 pt 1000 de episoade
             self.hidden_layers = []
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(32, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
         elif method == MethodToUse.DQN_TARGET_NETWORK:
@@ -61,9 +62,10 @@ class DQNModel(tf.keras.Model):
         else:
             # add a few hidden layers
             self.hidden_layers = []
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
