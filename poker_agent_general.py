@@ -163,8 +163,7 @@ class PokerAgent:
 
             while True:
                 # get action
-                eps_at_episode = self.get_epsilon(episode_index)
-                action = self.select_action(state, epsilon=eps_at_episode)
+                action = self.select_action(state, epsilon=self.end_epsilon)
 
                 # step environment
                 next_state, reward, done, info = self.env.step(action)

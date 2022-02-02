@@ -7,7 +7,7 @@ class QLearning_PokerAgent(PokerAgent):
         super().__init__('q_learning', env, gamma, alpha, start_epsilon, end_epsilon, epsilon_decay)
 
     # given (state, action, reward, next_state) pair after a transition made in the environment and the episode index
-    def update_experience(self, state, action, reward, next_state):
+    def update_experience(self, state, action, reward, next_state, episode_index):
         best_actionIndex_from_next_state = np.argmax(self.q[next_state])
         best_actionIndex_from_next_state = self.q[next_state][best_actionIndex_from_next_state]
 

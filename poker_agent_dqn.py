@@ -46,7 +46,7 @@ class DQNModel(tf.keras.Model):
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
         elif method == MethodToUse.DQN_TARGET_NETWORK:
-            # avg 86.90 - 1000 ep
+            # avg 179 - 1100 ep
 
             # add a few hidden layers
             self.hidden_layers = []
@@ -57,11 +57,13 @@ class DQNModel(tf.keras.Model):
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
         elif method == MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY:
+            # 176.5 - 2700 ep
+
             # add a few hidden layers
             self.hidden_layers = []
             self.hidden_layers.append(tf.keras.layers.Dense(32, activation='tanh'))
-            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='softmax'))
-            self.hidden_layers.append(tf.keras.layers.Dense(8, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='selu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(8, activation='selu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
@@ -92,7 +94,7 @@ class MethodToUse(IntEnum):
     DQN_BASE = 0
     DQN_TARGET_NETWORK = 1
     DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY = 2
-    DQN_AND_ALL = 3
+    DDQN_AND_ALL = 3
 
 class DQN_PokerAgent(PokerAgent):
     def __init__(self, env, seed = None, replay_buffer_size = 32000, gamma = 0.9,
@@ -364,13 +366,10 @@ class DQN_PokerAgent(PokerAgent):
             state_shape = state.shape
 
             while True:
-                # get epsilon for this step
-                epsilon = self.get_epsilon(no_episode=episode_index)
-
                 # convert to a batch 1 tensor the state
                 state_batched = tf.expand_dims(state, 0)
 
-                actions = self.select_action(state_batched, epsilon)
+                actions = self.select_action(state_batched, self.end_epsilon)
                 current_action = tf.constant(actions[0]) # first action in the batch
 
                 # apply action, get next step and reward

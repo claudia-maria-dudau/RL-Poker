@@ -13,6 +13,24 @@ from poker_agent_q_learning import QLearning_PokerAgent
 from poker_agent_sarsa import Sarsa_PokerAgent
 
 
+"""
+Usage:
+  main.py [option]
+
+option:
+    sarsa                   -- 5 random players + 1 SARSA player
+    expected_sarsa          -- 5 random players + 1 Expected SARSA player
+    q_learning              -- 5 random players + 1 Q Learning player
+    dqn                     -- 5 random players + 1 DQN_BASE player
+    dqn_target              -- 5 random players + 1 DQN_TARGET_NETWORK player
+    dqn_experience_replay   -- 5 random players + 1 DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY player
+    dqn_all                 -- 5 random players + 1 DQN_AND_ALL player
+    all_basic               -- 1 SARSA player + 1 Expected SARSA player + 1 Q Learning player
+    all_dqn                 -- all 4 dqn players
+    all                     -- 1 Expected SARSA player + 1 Q Learning player + all 4 dqn players
+"""
+
+
 class SelfPlay:
     """Orchestration of playing against itself"""
 
@@ -168,7 +186,7 @@ class SelfPlay:
             return DQN_PokerAgent(self.env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
                       steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=0,
                       start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                      method=MethodToUse.DQN_AND_ALL)
+                      method=MethodToUse.DDQN_AND_ALL)
 
     def dqn_agent(self, method):
         """Create an environment with 5 random players and a dqn player"""
@@ -209,24 +227,122 @@ class SelfPlay:
         print('------------')
         print(f'Average score: {average_score}, Average actions per ep: {average_actions}')
 
-    def all_agents(self):
-        """Create an environment with all 6 players"""
+    def all_basic_agents(self):
+        """Create an environment with all 3 basic players"""
 
         self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
         self.env.add_player(PlayerShell(name='SARSA', stack_size=self.stack))
         self.env.add_player(PlayerShell(name='Expected_SARSA', stack_size=self.stack))
         self.env.add_player(PlayerShell(name='Q_Learning', stack_size=self.stack))
-        self.env.add_player(PlayerShell(name='DQN_BASE', stack_size=self.stack))
-        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK', stack_size=self.stack))
-        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY', stack_size=self.stack))
-        self.env.add_player(PlayerShell(name='DQN_AND_ALL', stack_size=self.stack))
 
         self.env.reset()
 
+        sarsaAgent = Sarsa_PokerAgent(self.env, gamma=0.8, alpha=1e-1,
+                    start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999)
+        sarsaAgent.load_q_table()
+
+        expectedSarsaAgent = ExpectedSarsa_PokerAgent(self.env, gamma=0.8, alpha=1e-1,
+                                start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999)
+        expectedSarsaAgent.load_q_table()
+
+        QLearningAgent = QLearning_PokerAgent(self.env, gamma=0.8, alpha=1e-1,
+                                start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999)
+        QLearningAgent.load_q_table()
 
         for _ in range(self.num_episodes):
             self.env.reset()
 
+            sarsaAgent.play(no_episodes=1)
+
+            self.winner_in_episodes.append(self.env.winner_ix)
+
+
+        league_table = pd.Series(self.winner_in_episodes).value_counts()
+        best_player = league_table.index[0]
+
+        print("League Table")
+        print("============")
+        print("Player - No episodes won")
+        print(league_table)
+        print(f"Best Player: {best_player}")
+
+    def all_dqn_agents(self):
+        """Create an environment with all 4 dqn players"""
+
+        self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
+        self.env.add_player(PlayerShell(name='DQN_BASE', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DDQN_AND_ALL', stack_size=self.stack))
+
+        self.env.reset()
+
+        DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
+        DQNAgent1.load_model()
+
+        DQNAgent2 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
+        DQNAgent2.load_model()
+
+        DQNAgent3 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
+        DQNAgent3.load_model()
+
+        DQNAgent4 = self.get_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
+        DQNAgent4.load_model()
+
+        for _ in range(self.num_episodes):
+            self.env.reset()
+
+            DQNAgent1.play(no_episodes=1)
+
+            self.winner_in_episodes.append(self.env.winner_ix)
+
+
+        league_table = pd.Series(self.winner_in_episodes).value_counts()
+        best_player = league_table.index[0]
+
+        print("League Table")
+        print("============")
+        print("Player - No episodes won")
+        print(league_table)
+        print(f"Best Player: {best_player}")
+
+    def all_agents(self):
+        """Create an environment with all 6 players"""
+
+        self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
+        self.env.add_player(PlayerShell(name='Expected_SARSA', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='Q_Learning', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DQN_BASE', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DDQN_AND_ALL', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY', stack_size=self.stack))
+
+        self.env.reset()
+
+        expectedSarsaAgent = ExpectedSarsa_PokerAgent(self.env, gamma=0.8, alpha=1e-1,
+                                start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999)
+        expectedSarsaAgent.load_q_table()
+
+        QLearningAgent = QLearning_PokerAgent(self.env, gamma=0.8, alpha=1e-1,
+                                start_epsilon=1, end_epsilon=1e-2, epsilon_decay=0.999)
+        QLearningAgent.load_q_table()
+
+        DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
+        DQNAgent1.load_model()
+
+        DQNAgent2 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
+        DQNAgent2.load_model()
+
+        DQNAgent3 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
+        DQNAgent3.load_model()
+
+        DQNAgent4 = self.get_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
+        DQNAgent4.load_model()
+
+        for _ in range(self.num_episodes):
+            self.env.reset()
+
+            expectedSarsaAgent.play(no_episodes=1)
 
             self.winner_in_episodes.append(self.env.winner_ix)
 
@@ -247,7 +363,7 @@ def command_line_parser():
 
     num_episodes = 3
     runner = SelfPlay(render=True, num_episodes=num_episodes, use_cpp_montecarlo=False,
-                      funds_plot=False, stack=20)
+                      funds_plot=True, stack=20)
 
     if args == 'sarsa':
         runner.sarsa_agent()
@@ -268,7 +384,13 @@ def command_line_parser():
         runner.dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
 
     elif args == 'dqn_all':
-        runner.dqn_agent(method=MethodToUse.DQN_AND_ALL)   
+        runner.dqn_agent(method=MethodToUse.DDQN_AND_ALL)   
+
+    elif args == 'all_basic':
+        runner.all_basic_agents()
+
+    elif args == 'all_dqn':
+        runner.all_dqn_agents()
 
     elif args == 'all':
         runner.all_agents()
