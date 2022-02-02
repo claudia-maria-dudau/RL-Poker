@@ -47,9 +47,10 @@ def run_dqn_agent():
                       steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=100,
                       start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
                       method=MethodToUse.DQN_TARGET_NETWORK)
-    DQNAgent.train(max_episodes=1000, max_steps_per_episode=200, reward_threshold=400, no_episodes_for_average = 10)
+    DQNAgent.train(max_episodes=2000, max_steps_per_episode=200, reward_threshold=300, no_episodes_for_average = 50, load_prev=True)
+    print(DQNAgent.max_score[DQNAgent.method.value], DQNAgent.round_max_score[DQNAgent.method.value])
 
-# run_sarsa_agent()
+# run_sarsa_agent() 
 # run_qlearning_agent()
 # run_expected_sarsa_agent()
 run_dqn_agent()

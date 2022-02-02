@@ -45,9 +45,9 @@ class DQNModel(tf.keras.Model):
         elif method == MethodToUse.DQN_TARGET_NETWORK:
             # add a few hidden layers
             self.hidden_layers = []
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='linear'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(32, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(32, activation='selu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(32, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
         elif method == MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY:
@@ -293,7 +293,10 @@ class DQN_PokerAgent(PokerAgent):
 
         return loss, grads_magnitude
 
-    def train(self, max_episodes, max_steps_per_episode, reward_threshold, no_episodes_for_average = 10):
+    def train(self, max_episodes, max_steps_per_episode, reward_threshold, no_episodes_for_average = 10, load_prev=False):
+        if load_prev:
+            self.load_model()
+
         episode_reward_history = []
         last_rewards = collections.deque(maxlen=no_episodes_for_average)
 
@@ -314,12 +317,15 @@ class DQN_PokerAgent(PokerAgent):
                 t.set_postfix(episode_reward=episode_reward, running_reward=mean_episode_reward)
                 if episode % no_episodes_for_average == 0:
                     print(f'\nEpisode {episode} (total step) {self.total_steps}: average reward: {mean_episode_reward}. avg loss: {avg_loss} epsilon used: {epsilon_used} grads mag: {grads_magnitude}')
-                
-                    if mean_episode_reward > self.max_score[self.method.value]:
+                    
+                    if episode != 0 and mean_episode_reward > self.max_score[self.method.value]:
                         self.max_score[self.method.value] = mean_episode_reward
                         self.round_max_score[self.method.value] = episode
+                        self.save_model()
+                    
+                    print(self.max_score[self.method.value], self.round_max_score[self.method.value])
 
-                if mean_episode_reward > reward_threshold:
+                if episode != 0 and mean_episode_reward > reward_threshold:
                     break
 
         print(f"\nSolved at episode{episode}: average rewards {mean_episode_reward:.2f}!")
