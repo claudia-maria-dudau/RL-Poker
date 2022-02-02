@@ -145,4 +145,48 @@ class PokerAgent:
                 
             item = f.readline()
 
-        f.close() 
+        f.close()
+
+    def play(self, no_episodes):
+        self.load_q_table()
+
+        scores = []
+        actions_per_ep = []
+
+        for episode_index in trange(no_episodes):
+            # for the record
+            score = 0
+            no_actions = 0
+
+            # initiate state
+            state = tuple(self.env.reset())
+
+            while True:
+                # get action
+                eps_at_episode = self.get_epsilon(episode_index)
+                action = self.select_action(state, epsilon=eps_at_episode)
+
+                # step environment
+                next_state, reward, done, info = self.env.step(action)
+                next_state = tuple(next_state)
+
+                # records
+                score += reward
+                no_actions += 1
+
+                # move to next state
+                state = next_state
+
+                if done:
+                    break
+
+            # record
+            scores.append(score)
+            actions_per_ep.append(no_actions)
+
+        average_score = np.mean(scores)
+        average_actions = np.mean(actions_per_ep)
+
+        print(f'Average score: {average_score}, Average actions per ep: {average_actions}')
+
+        return average_score, average_actions

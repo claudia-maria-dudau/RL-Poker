@@ -35,15 +35,19 @@ class DQNModel(tf.keras.Model):
         self.input_layer = tf.keras.layers.InputLayer(input_shape=input_shape)
 
         if method == MethodToUse.DQN_BASE:
+            # avg 173.6 - 1000 ep
+
             # add a few hidden layers
-            #avg 173.6 pt 1000 de episoade
             self.hidden_layers = []
             self.hidden_layers.append(tf.keras.layers.Dense(32, activation='tanh'))
             self.hidden_layers.append(tf.keras.layers.Dense(16, activation='relu'))
             self.hidden_layers.append(tf.keras.layers.Dense(16, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+
         elif method == MethodToUse.DQN_TARGET_NETWORK:
+            # avg 86.90 - 1000 ep
+
             # add a few hidden layers
             self.hidden_layers = []
             self.hidden_layers.append(tf.keras.layers.Dense(32, activation='relu'))
@@ -51,14 +55,16 @@ class DQNModel(tf.keras.Model):
             self.hidden_layers.append(tf.keras.layers.Dense(32, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+
         elif method == MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY:
             # add a few hidden layers
             self.hidden_layers = []
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='tanh'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
-            self.hidden_layers.append(tf.keras.layers.Dense(512, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(32, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='softmax'))
+            self.hidden_layers.append(tf.keras.layers.Dense(8, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
+
         else:
             # add a few hidden layers
             self.hidden_layers = []
@@ -86,7 +92,7 @@ class MethodToUse(IntEnum):
     DQN_BASE = 0
     DQN_TARGET_NETWORK = 1
     DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY = 2
-    DDQN_AND_ALL = 3
+    DQN_AND_ALL = 3
 
 class DQN_PokerAgent(PokerAgent):
     def __init__(self, env, seed = None, replay_buffer_size = 32000, gamma = 0.9,
@@ -333,7 +339,6 @@ class DQN_PokerAgent(PokerAgent):
         print(f"\nSolved at episode{episode}: average rewards {mean_episode_reward:.2f}!")
         print(self.max_score[self.method.value], self.round_max_score[self.method.value])
 
-        self.save_q_table()
         self.save_model()
 
     def save_model(self):
@@ -342,3 +347,53 @@ class DQN_PokerAgent(PokerAgent):
     def load_model(self):
         self.dqn.load_weights(self.name)
         self.dqn_target.set_weights(self.dqn.get_weights())
+
+    def play(self, no_episodes):
+        self.load_model()
+
+        scores = []
+        actions_per_ep = []
+
+        for episode_index in tqdm.trange(no_episodes):
+            # for the record
+            score = 0
+            no_actions = 0
+
+            # initiate state
+            state = tf.constant(self.env.reset(), dtype=tf.float32)
+            state_shape = state.shape
+
+            while True:
+                # get epsilon for this step
+                epsilon = self.get_epsilon(no_episode=episode_index)
+
+                # convert to a batch 1 tensor the state
+                state_batched = tf.expand_dims(state, 0)
+
+                actions = self.select_action(state_batched, epsilon)
+                current_action = tf.constant(actions[0]) # first action in the batch
+
+                # apply action, get next step and reward
+                next_state, reward, done = self.tf_env_step(current_action)
+                next_state.set_shape(state_shape)
+
+                # records
+                score += reward
+                no_actions += 1
+
+                # move to next state
+                state = next_state
+
+                if done:
+                    break
+
+            # record
+            scores.append(score)
+            actions_per_ep.append(no_actions)
+
+        average_score = np.mean(scores)
+        average_actions = np.mean(actions_per_ep)
+
+        print(f'Average score: {average_score}, Average actions per ep: {average_actions}')
+
+        return average_score, average_actions
