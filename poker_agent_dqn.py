@@ -68,12 +68,13 @@ class DQNModel(tf.keras.Model):
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
         else:
+            # avg 252.6 - 500 ep
+
             # add a few hidden layers
             self.hidden_layers = []
-            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
-            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
-            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
-            self.hidden_layers.append(tf.keras.layers.Dense(128, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(32, activation='tanh'))
+            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='relu'))
+            self.hidden_layers.append(tf.keras.layers.Dense(16, activation='relu'))
 
             self.output_layer = tf.keras.layers.Dense(units=n_action, activation='linear')
 
@@ -102,7 +103,7 @@ class DQN_PokerAgent(PokerAgent):
                  steps_until_sync = 20, # at how many steps should we update the target network weights
                  pre_train_steps = 1, # steps to run before starting the training process
                  start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                 method: MethodToUse = MethodToUse.DQN_TARGET_NETWORK):
+                 method = MethodToUse.DQN_TARGET_NETWORK, load_prev = False):
         super().__init__(method.name.lower(), env, gamma, lr, start_epsilon, end_epsilon, (start_epsilon - end_epsilon) / (final_epsilon_step - pre_train_steps))
 
         self.method = method
@@ -143,6 +144,9 @@ class DQN_PokerAgent(PokerAgent):
 
         # total steps of the running algorithm
         self.total_steps = 0
+
+        if load_prev:
+            self.load_model()
 
     # get epsilon
     def get_epsilon(self, no_episode):
@@ -303,10 +307,7 @@ class DQN_PokerAgent(PokerAgent):
 
         return loss, grads_magnitude
 
-    def train(self, max_episodes, max_steps_per_episode, reward_threshold, no_episodes_for_average = 10, load_prev=False):
-        if load_prev:
-            self.load_model()
-
+    def train(self, max_episodes, max_steps_per_episode, reward_threshold, no_episodes_for_average = 10):
         episode_reward_history = []
         last_rewards = collections.deque(maxlen=no_episodes_for_average)
 
@@ -347,12 +348,11 @@ class DQN_PokerAgent(PokerAgent):
         self.dqn.save_weights(self.name)
 
     def load_model(self):
+        print(self.name)
         self.dqn.load_weights(self.name)
         self.dqn_target.set_weights(self.dqn.get_weights())
 
     def play(self, no_episodes):
-        self.load_model()
-
         scores = []
         actions_per_ep = []
 

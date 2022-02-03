@@ -39,9 +39,9 @@ class SelfPlay:
         self.use_cpp_montecarlo = use_cpp_montecarlo
         self.funds_plot = funds_plot
         self.render = render
-        self.env = None
         self.num_episodes = num_episodes
         self.stack = stack
+        self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
 
     def sarsa_agent(self):
         """Create an environment with 5 random players and a sarsa player"""
@@ -164,37 +164,17 @@ class SelfPlay:
         print(f'Average score: {average_score}, Average actions per ep: {average_actions}')
 
     def get_dqn_agent(self, method):
-        if method == MethodToUse.DQN_BASE:
-            return DQN_PokerAgent(self.env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
+        return DQN_PokerAgent(self.env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
                       steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=0,
                       start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                      method=MethodToUse.DQN_BASE)
-        
-        elif method == MethodToUse.DQN_TARGET_NETWORK:
-            return DQN_PokerAgent(self.env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
-                      steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=0,
-                      start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                      method=MethodToUse.DQN_TARGET_NETWORK)
-
-        elif method == MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY:
-            return DQN_PokerAgent(self.env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
-                      steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=0,
-                      start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                      method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
-
-        else:
-            return DQN_PokerAgent(self.env, seed=42, gamma=0.99, batch_size=64, lr=0.0007,
-                      steps_until_sync=200, replay_buffer_size=32000, pre_train_steps=0,
-                      start_epsilon = 1, end_epsilon = 0.1, final_epsilon_step = 10000,
-                      method=MethodToUse.DDQN_AND_ALL)
+                      method=method, load_prev=True)
 
     def dqn_agent(self, method):
-        """Create an environment with 5 random players and a dqn player"""
+        """Create an environment with a random players and a dqn player"""
 
         self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
         for _ in range(5):
-            player = RandomPlayer()
-            self.env.add_player(player)
+            self.env.add_player(RandomPlayer())
         self.env.add_player(PlayerShell(name=method.name, stack_size=self.stack))
 
         self.env.reset()
@@ -277,22 +257,15 @@ class SelfPlay:
 
         self.env.reset()
 
-        DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
-        DQNAgent1.load_model()
-
+        # DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
         DQNAgent2 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
-        DQNAgent2.load_model()
-
         DQNAgent3 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
-        DQNAgent3.load_model()
-
         DQNAgent4 = self.get_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
-        DQNAgent4.load_model()
 
         for _ in range(self.num_episodes):
             self.env.reset()
 
-            DQNAgent1.play(no_episodes=1)
+            DQNAgent4.play(no_episodes=1)
 
             self.winner_in_episodes.append(self.env.winner_ix)
 
@@ -328,16 +301,12 @@ class SelfPlay:
         QLearningAgent.load_q_table()
 
         DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
-        DQNAgent1.load_model()
 
         DQNAgent2 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
-        DQNAgent2.load_model()
 
         DQNAgent3 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
-        DQNAgent3.load_model()
 
         DQNAgent4 = self.get_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
-        DQNAgent4.load_model()
 
         for _ in range(self.num_episodes):
             self.env.reset()
