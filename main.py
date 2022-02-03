@@ -26,7 +26,7 @@ option:
     dqn_experience_replay   -- 5 random players + 1 DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY player
     dqn_all                 -- 5 random players + 1 DQN_AND_ALL player
     all_basic               -- 1 SARSA player + 1 Expected SARSA player + 1 Q Learning player
-    all_dqn                 -- all 4 dqn players
+    all_dqn                 -- 2 random players + all 4 dqn players
     all                     -- 1 Expected SARSA player + 1 Q Learning player + all 4 dqn players
 """
 
@@ -170,7 +170,7 @@ class SelfPlay:
                       method=method, load_prev=True)
 
     def dqn_agent(self, method):
-        """Create an environment with a random players and a dqn player"""
+        """Create an environment with 5 random players and a dqn player"""
 
         self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
         for _ in range(5):
@@ -247,17 +247,19 @@ class SelfPlay:
         print(f"Best Player: {best_player}")
 
     def all_dqn_agents(self):
-        """Create an environment with all 4 dqn players"""
+        """Create an environment with 2 random players and all 4 dqn players"""
 
         self.env = HoldemTable(initial_stacks=self.stack, render=self.render)
+        self.env.add_player(RandomPlayer())
+        self.env.add_player(RandomPlayer())
         self.env.add_player(PlayerShell(name='DQN_BASE', stack_size=self.stack))
         self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK', stack_size=self.stack))
-        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY', stack_size=self.stack))
         self.env.add_player(PlayerShell(name='DDQN_AND_ALL', stack_size=self.stack))
+        self.env.add_player(PlayerShell(name='DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY', stack_size=self.stack))
 
         self.env.reset()
 
-        # DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
+        DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
         DQNAgent2 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
         DQNAgent3 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
         DQNAgent4 = self.get_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
@@ -265,7 +267,7 @@ class SelfPlay:
         for _ in range(self.num_episodes):
             self.env.reset()
 
-            DQNAgent4.play(no_episodes=1)
+            DQNAgent1.play(no_episodes=1)
 
             self.winner_in_episodes.append(self.env.winner_ix)
 
@@ -301,11 +303,8 @@ class SelfPlay:
         QLearningAgent.load_q_table()
 
         DQNAgent1 = self.get_dqn_agent(method=MethodToUse.DQN_BASE)
-
         DQNAgent2 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
-
         DQNAgent3 = self.get_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
-
         DQNAgent4 = self.get_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
 
         for _ in range(self.num_episodes):

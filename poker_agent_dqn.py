@@ -350,7 +350,9 @@ class DQN_PokerAgent(PokerAgent):
     def load_model(self):
         print(self.name)
         self.dqn.load_weights(self.name)
-        self.dqn_target.set_weights(self.dqn.get_weights())
+
+        if self.method > MethodToUse.DQN_BASE:
+            self.dqn_target.set_weights(self.dqn.get_weights())
 
     def play(self, no_episodes):
         scores = []

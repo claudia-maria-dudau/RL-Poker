@@ -1,2 +1,2 @@
-model_checkpoint_path: "dqn_target_network_and_experience_replay"
-all_model_checkpoint_paths: "dqn_target_network_and_experience_replay"
+model_checkpoint_path: "ddqn_and_all"
+all_model_checkpoint_paths: "ddqn_and_all"

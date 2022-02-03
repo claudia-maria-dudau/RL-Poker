@@ -61,6 +61,6 @@ def run_dqn_agent(method=MethodToUse.DQN_BASE):
 # run_qlearning_agent()
 # run_expected_sarsa_agent()
 # run_dqn_agent(method=MethodToUse.DQN_BASE)
-run_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
-run_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
+# run_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK)
+# run_dqn_agent(method=MethodToUse.DQN_TARGET_NETWORK_AND_EXPERIENCE_REPLAY)
 # run_dqn_agent(method=MethodToUse.DDQN_AND_ALL)
